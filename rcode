@@ -1,0 +1,1666 @@
+###########################################################
+###########################################################
+
+# <<<<<<<<<<<<<<<<<<<<<<< Group 5 >>>>>>>>>>>>>>>>>>>>>
+
+##       Umbrella Consultancy report for Company X
+
+###########################################################
+###########################################################
+
+# Company X has tasked Umbrella Consultancy with generating an
+#   understanding of the success of their different marketing campaigns.
+
+# In particular, Company X wanted to understand which marketing campaign
+#  worked best and for who, alongside any further insights. However, the
+#   company did not provide Umbrella consultancy with operationalised
+#     meanings of terms such as the 'best'.
+
+# Therefore, the first task for Umbrella Consultancy was to further
+#   develop our understanding of the best marketing campaign and use it to
+#     develop analytical insights. In order to do this, Umbrella Consultancy
+#       was provided with a series of anonymised data sets; including
+#       purchasing habits, personal data including educational status, marital
+#         status, income and age which was accompanied by a written description
+#           of the various data entries.
+
+# After an internal discussion, Umbrella Consultancy agreed that the
+#   best marketing campaign could be deduced through the number of website
+#     visits per campaign. Then in order to determine which campaign worked
+#       best per population demographic, we determined that it would be best
+#         to look at the different educational levels that were present within
+#           the data set. This decision was made due to the knowledge presented
+#             within Ioncica et al. (2012) that education status has a direct impact on 
+#               purchaser behaviours and purchaser habits.
+
+
+# Start the  script with this >>>>>
+
+rm(list = ls())    # Clears all variables from environment
+
+###########################################################
+# Research Objectives
+
+# 1. Determine which campaign gained the most website visits
+# 2. Filter the data by educational status
+# 3. Present clear visuals to accompany the coded analytics
+###########################################################
+
+###########################################################
+##    Step 1 - Data Package Requirements 
+###########################################################
+
+# 1. In order to complete the data analysis, the data will be analysed
+#     using the program R Studio. To run the code below please upload the provided 
+#       data sets to R in a .csv format and set the working directory.
+
+##  To set the working directory, use the 'Session' tab on the top bar >>> 'Set Working Directory' >>> 'Choose Directory' >>> select your desired file
+
+
+getwd() #Checks where the working directory has been set
+
+# 2. To run the data, please ensure that you have installed "tidyverse" and "cowplot" by running the code below:
+
+library(tidyverse) # Loads the tidyverse package
+library(cowplot) # Loads the cowplot package
+library(ggplot2) # Loads the ggolot 2 package 
+
+# If one or more packafes are not installed, use the following commands (remove the #): 
+#install.packages("tidyverse")
+#install.packages("cowplot")
+#install.packages("ggplot2")
+
+# 3. Alongside doing that please make sure that all the datasets being used are in the 
+#folder you are using as your working directory and use the read_csv() function to load the client's data.
+
+campaign_data <- read_csv("/kaggle/input/company-x-campaign-data/campaign_data.csv") #Assigns the data set to campaign_data
+customer_data <- read_csv("/kaggle/input/company-x-campaign-data/customer_data.csv") #Assigns the data set to customer_data
+purchase_data <- read_csv("/kaggle/input/company-x-campaign-data/purchase_data.csv") #Assigns the data set to purchase_data
+
+###########################################################
+##    Step 2 - Understanding the data 
+###########################################################
+
+# The objective of this step was to allow the consultancy to generate an
+#   increased level of knowledge about the dataset. This insight will give the
+#     Umbrella Consultancy's data team time to prepare and plan the
+#       required analytical procedures to achieve the data analysis objectives.
+
+# 1. One can get an understanding of the data using names() and/or glimpse() and/or summary()
+
+# int stands for integers.
+# dbl stands for doubles, or real numbers.
+# chr stands for character vectors, or strings.
+# dttm stands for date-times (a date + a time).
+# fctr stands for factors, which R uses to represent categorical variables with fixed possible values.
+# date stands for dates.
+
+names(campaign_data)
+names(customer_data)
+names(purchase_data)
+
+glimpse(campaign_data)
+glimpse(customer_data)
+glimpse(purchase_data)
+
+summary(campaign_data)
+summary(customer_data)
+summary(purchase_data)
+
+# The result of this step presented that there were variables that required 
+#   changing into a factor from a variable and that there were insignificant data 
+#     entries that required deletion.
+
+###########################################################
+##    Step 3 - Data Wrangling
+###########################################################
+
+# 1. Merge the three different customer data, purchase data and campaign data.
+
+merged <- campaign_data%>%
+  full_join(customer_data)%>%
+  full_join(purchase_data)
+
+# 2. Change the Marital_Status and Education variables as factor, and create the Total Spend, Age and Amount Purchased variables.
+
+merged <- merged %>%
+  mutate(Marital_Status = as.factor(Marital_Status),
+         Education = as.factor(Education)) %>%
+  mutate(TotalSpend = (Product_1 + Product_2 + Product_3 + Product_4 + Product_5 + Product_6))%>%
+  mutate(Age = 2021 - Year_Birth)%>%
+  mutate(AmountPurchased = Web + Store + Catalogue + Deal)
+
+merged <-filter(merged , Education != "Basic"&WebVisit <11& Marital_Status != "Alone" & Marital_Status != "YOLO" & Marital_Status != "Absurd")
+
+summary(merged)
+
+# 3. Remove the insignificant data entries from the merged data set by using the filer() and select() commands.
+
+merged <-filter(merged , Education != "Basic"&WebVisit <11 & WebVisit >0 & Marital_Status != "Alone" & Marital_Status != "YOLO" & Marital_Status != "Absurd" & Age <100 & Store <12 & Store >0 & Catalogue <13 & Catalogue >0 & Deal <9 & Deal >0 & Web <13 & Web >0)
+
+performance_data <- select(merged, TotalSpend , AmountPurchased , Web , Store , Catalogue , Deal)
+
+performance_data <- filter(performance_data , Store <12 & Store >0 & Catalogue <13 & Catalogue >0 & Deal <9 & Deal >0 & Web <13 & Web >0)
+
+###########################################################
+##    Step 4 - Stratify the data
+###########################################################
+
+# This step involved organising the data by the six different campaigns that were ran by 
+#   Company X which enabled easing data manipulation and analysis.
+
+# 1. Separate the overall data set (merged) into different campaigns using the select() function.
+
+camp_1 <-  select(merged , Camp_1 , Year_Birth , Age, AmountPurchased , Education , Marital_Status , Income , Kidhome , Teenhome, TotalSpend , Deal , Web , Catalogue ,Store ,WebVisit , Complain)
+
+camp_2 <-  select(merged , Camp_2 , Year_Birth , Age, Education , AmountPurchased , Marital_Status , Income , Kidhome , Teenhome, TotalSpend , Deal , Web , Catalogue , Store ,WebVisit , Complain)
+
+camp_3 <-  select(merged , Camp_3 , Year_Birth , Age, Education ,AmountPurchased , Marital_Status , Income , Kidhome , Teenhome , TotalSpend , Deal , Web , Catalogue , Store , WebVisit , Complain)
+
+camp_4 <-  select(merged , Camp_4 , Year_Birth , Age, Education ,AmountPurchased , Marital_Status , Income , Kidhome , Teenhome, TotalSpend , Deal , Web , Catalogue , Store ,WebVisit , Complain)
+
+camp_5 <-  select(merged , Camp_5 , Year_Birth , Age, Education ,AmountPurchased , Marital_Status , Income , Kidhome , Teenhome,  Recency , TotalSpend , Deal , Web , Catalogue , Store ,WebVisit , Complain)
+
+camp_6 <-  select(merged , Camp_6 , Year_Birth , Age, Education ,AmountPurchased , Marital_Status , Income , Kidhome , Teenhome , TotalSpend , Deal , Web , Catalogue , Store ,WebVisit , Complain)
+
+any_camp <-  select(merged , Any , Year_Birth , Age, Education , AmountPurchased ,Marital_Status , Income , Kidhome , Teenhome , TotalSpend , Deal , Web , Catalogue , Store , WebVisit , Complain)
+
+summary(any_camp)
+
+# 2. Seperate into the the six different campaigns and attending any campaign using the filter() command.
+
+part_camp1 <- filter(camp_1, Camp_1 == "1")
+
+part_camp2 <- filter(camp_2, Camp_2 == "1")
+
+part_camp3 <- filter(camp_3, Camp_3 == "1")
+
+part_camp4 <- filter(camp_4, Camp_4 == "1")
+
+part_camp5 <- filter(camp_5 , Camp_5 == "1")
+
+part_camp6 <- filter(camp_6, Camp_6 == "1")
+
+part_any <- filter(merged , Any == "1")
+
+part_none <- filter(merged , Any == "0")
+
+
+###########################################################
+##    Step 5 - Question 1 - Methods of Purchase 
+###########################################################
+
+# This step will start to examine which marketing campaign worked the best by investigating the 
+#   different methods of purchase involved within the 6 different campaigns which include: "Web", "Store", "Catalogue" and "Deal".
+
+# 1. Create individual plots for each campaign to highlight the most popular methods of purchase per campaigns.
+
+# 2. Present the overall spending performance of different categories within the camps, within the last 24 months
+
+# Campaign 1 
+
+Camp1_WebSpend <- ggplot(part_camp1 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Orange")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Website")
+
+Camp1_StoreSpend <- ggplot(part_camp1 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Orange")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased in Store")
+
+Camp1_CatalogueSpend <- ggplot(part_camp1 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Orange")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp1_DealSpend <- ggplot(part_camp1 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Orange")+
+  theme_cowplot()+
+  labs(title = "Campaign 1" ,
+       y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased Using Discount")
+
+plot_grid(Camp1_DealSpend , Camp1_StoreSpend , Camp1_CatalogueSpend , Camp1_WebSpend) # Overall plot of performance for Campaign 1
+
+
+# Campaign 2
+
+Camp2_WebSpend <- ggplot(part_camp2 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Light Blue")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Website")
+
+Camp2_StoreSpend <- ggplot(part_camp2 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Light Blue")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased in Store")
+
+Camp2_CatalogueSpend <- ggplot(part_camp2 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Light Blue")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp2_DealSpend <- ggplot(part_camp2 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Light Blue")+
+  theme_cowplot()+
+  labs(title = "Campaign 2",
+       y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased Using Discount")
+
+
+plot_grid(Camp2_DealSpend , Camp2_StoreSpend , Camp2_CatalogueSpend , Camp2_WebSpend) # Overall plot of performance for Campaign 2
+
+
+# Campaign 3
+
+Camp3_WebSpend <- ggplot(part_camp3 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Yellow")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Website")
+
+Camp3_StoreSpend <- ggplot(part_camp3 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Yellow")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased in Store")
+
+Camp3_CatalogueSpend <- ggplot(part_camp3 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Yellow")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp3_DealSpend <- ggplot(part_camp3 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Yellow")+
+  theme_cowplot()+
+  labs(title = "Campaign 3",
+       y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased Using Discount")
+
+
+plot_grid(Camp3_DealSpend , Camp3_StoreSpend , Camp3_CatalogueSpend , Camp3_WebSpend) # Overall plot of performance for Campaign 3
+
+
+# Campaign 4
+
+Camp4_WebSpend <- ggplot(part_camp4 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Red")+
+  theme_cowplot()+
+  labs(title = "Campaign 4",
+       y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Website")
+
+Camp4_StoreSpend <- ggplot(part_camp4 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Red")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased in Store")
+
+Camp4_CatalogueSpend <- ggplot(part_camp4 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Red")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months",
+       x = "Amount Purchased via Catalogue")
+
+Camp4_DealSpend <- ggplot(part_camp4 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Red")+
+  theme_cowplot()+
+  labs(title = "Campaign 4",
+       y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased Using Discount")
+
+
+plot_grid(Camp4_DealSpend , Camp4_StoreSpend , Camp4_CatalogueSpend , Camp4_WebSpend) # Overall plot of performance for Campaign 4
+
+# Campaign 5
+
+Camp5_WebSpend <- ggplot(part_camp5 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Light Pink")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Website")
+
+Camp5_StoreSpend <- ggplot(part_camp5 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Light Pink")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased in Store")
+
+Camp5_CatalogueSpend <- ggplot(part_camp5 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Light Pink")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp5_DealSpend <- ggplot(part_camp5 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Light Pink")+
+  theme_cowplot()+
+  labs(title = "Campaign 5",
+       y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased Using Discount")
+
+
+plot_grid(Camp5_DealSpend , Camp5_StoreSpend , Camp5_CatalogueSpend , Camp5_WebSpend) # Overall plot of performance for Campaign 5
+
+
+# Campaign 6
+
+Camp6_WebSpend <- ggplot(part_camp6 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Dark Green")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Website")
+
+Camp6_StoreSpend <- ggplot(part_camp6 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Dark Green")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased in Store")
+
+Camp6_CatalogueSpend <- ggplot(part_camp6 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Dark Green")+
+  theme_cowplot()+
+  labs(y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp6_DealSpend <- ggplot(part_camp6 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Dark Green")+
+  theme_cowplot()+
+  labs(title = "Campaign 6",
+       y = "Total Spend Over Last 24 Months (?)",
+       x = "Amount Purchased Using Discount")
+
+plot_grid(Camp6_DealSpend , Camp6_StoreSpend , Camp6_CatalogueSpend , Camp6_WebSpend) # Overall plot of performance for Campaign 6
+
+# Putting all the graphs on the same plot will give the best overview of each campaign's performance. In order to do so, the y axis must be labeled differently.
+
+# 3. Present the total spend overall of each category for each camp.
+
+# Campaign 1
+
+Camp1_WebSpend_big <- ggplot(part_camp1 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Orange")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Website")
+
+Camp1_StoreSpend_big <- ggplot(part_camp1 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Orange")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased in Store")
+
+Camp1_CatalogueSpend_big <- ggplot(part_camp1 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Orange")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp1_DealSpend_big <- ggplot(part_camp1 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Orange")+
+  theme_cowplot()+
+  labs(title = "Campaign 1" ,
+       y = "Total Spend (?)",
+       x = "Amount Purchased Using Discount")
+
+
+# Campaign 2
+
+Camp2_WebSpend_big <- ggplot(part_camp2 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Light Blue")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Website")
+
+Camp2_StoreSpend_big <- ggplot(part_camp2 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Light Blue")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased in Store")
+
+Camp2_CatalogueSpend_big <- ggplot(part_camp2 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Light Blue")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp2_DealSpend_big <- ggplot(part_camp2 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Light Blue")+
+  theme_cowplot()+
+  labs(title = "Campaign 2",
+       y = "Total Spend (?)",
+       x = "Amount Purchased Using Discount")
+
+
+# Campaign 3
+
+Camp3_WebSpend_big <- ggplot(part_camp3 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Yellow")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Website")
+
+Camp3_StoreSpend_big <- ggplot(part_camp3 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Yellow")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased in Store")
+
+Camp3_CatalogueSpend_big <- ggplot(part_camp3 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Yellow")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp3_DealSpend_big <- ggplot(part_camp3 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Yellow")+
+  theme_cowplot()+
+  labs(title = "Campaign 3",
+       y = "Total Spend (?)",
+       x = "Amount Purchased Using Discount")
+
+
+# Campaign 4
+
+Camp4_WebSpend_big <- ggplot(part_camp4 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Red")+
+  theme_cowplot()+
+  labs(title = "Campaign 4",
+       y = "Total Spend (?)",
+       x = "Amount Purchased via Website")
+
+Camp4_StoreSpend_big <- ggplot(part_camp4 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Red")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased in Store")
+
+Camp4_CatalogueSpend_big <- ggplot(part_camp4 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Red")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp4_DealSpend_big<- ggplot(part_camp4 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Red")+
+  theme_cowplot()+
+  labs(title = "Campaign 4",
+       y = "Total Spend (?)",
+       x = "Amount Purchased Using Discount")
+
+
+# Campaign 5
+
+Camp5_WebSpend_big <- ggplot(part_camp5 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Light Pink")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Website")
+
+Camp5_StoreSpend_big <- ggplot(part_camp5 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Light Pink")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased in Store")
+
+Camp5_CatalogueSpend_big <- ggplot(part_camp5 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Light Pink")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp5_DealSpend_big <- ggplot(part_camp5 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Light Pink")+
+  theme_cowplot()+
+  labs(title = "Campaign 5",
+       y = "Total Spend (?)",
+       x = "Amount Purchased Using Discount")
+
+
+# Campaign 6
+
+Camp6_WebSpend_big <- ggplot(part_camp6 , aes(x = Web , y = TotalSpend))+
+  geom_col(fill = "Dark Green")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Website")
+
+Camp6_StoreSpend_big <- ggplot(part_camp6 , aes(x = Store , y = TotalSpend))+
+  geom_col(fill = "Dark Green")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased in Store")
+
+Camp6_CatalogueSpend_big <- ggplot(part_camp6 , aes(x = Catalogue , y = TotalSpend))+
+  geom_col(fill = "Dark Green")+
+  theme_cowplot()+
+  labs(y = "Total Spend (?)",
+       x = "Amount Purchased via Catalogue")
+
+Camp6_DealSpend_big <- ggplot(part_camp6 , aes(x = Deal , y = TotalSpend))+
+  geom_col(fill = "Dark Green")+
+  theme_cowplot()+
+  labs(title = "Campaign 6",
+       y = "Total Spend (?)",
+       x = "Amount Purchased Using Discount")
+
+# 4. Present all data from step 5 on one plot to offer comparison between all campaigns.
+
+Camp1_MethodSpend <- plot_grid(Camp1_DealSpend_big , Camp1_StoreSpend_big , Camp1_CatalogueSpend_big , Camp1_WebSpend_big)
+
+Camp2_MethodSpend <- plot_grid(Camp2_DealSpend_big , Camp2_StoreSpend_big , Camp2_CatalogueSpend_big , Camp2_WebSpend_big)
+
+Camp3_MethodSpend <- plot_grid(Camp3_DealSpend_big , Camp3_StoreSpend_big , Camp3_CatalogueSpend_big , Camp3_WebSpend_big)
+
+Camp4_MethodSpend <- plot_grid(Camp4_DealSpend_big , Camp4_StoreSpend_big , Camp4_CatalogueSpend_big , Camp4_WebSpend_big)
+
+Camp5_MethodSpend <- plot_grid(Camp5_DealSpend_big , Camp5_StoreSpend_big , Camp5_CatalogueSpend_big , Camp5_WebSpend_big)
+
+Camp6_MethodSpend <- plot_grid(Camp6_DealSpend_big , Camp6_StoreSpend_big , Camp6_CatalogueSpend_big , Camp6_WebSpend_big)
+
+
+plot_grid(Camp1_MethodSpend , Camp2_MethodSpend , Camp3_MethodSpend , Camp4_MethodSpend , Camp5_MethodSpend ,Camp6_MethodSpend)
+
+################################################################
+##    Step 6 - Question 1 - Overall Performance of Campaigns
+################################################################
+
+# To find which is the 'best' campaign, it is important to find the overall performance of the dataset.
+
+# 1. Merge the performance data from each category.
+
+performance_data <- select(merged, TotalSpend , AmountPurchased , Web , Store , Catalogue , Deal)
+
+
+# 2. Create plots from the performance_data data set for "Web Spends", "Catalogue Spend", "Store Spend" and "Deal Spend".
+
+WebSpend <- ggplot(performance_data , aes(x = Web , y = TotalSpend))+
+  geom_col()
+
+CatalogueSpend <- ggplot(performance_data , aes(x = Catalogue, y = TotalSpend))+
+  geom_col()
+
+StoreSpend <- ggplot(performance_data , aes(x = Store, y = TotalSpend))+
+  geom_col()
+
+DealSpend <- ggplot(performance_data , aes(x = Deal, y = TotalSpend))+
+  geom_col()
+
+
+plot_grid(DealSpend , StoreSpend , CatalogueSpend , WebSpend)
+
+# The creation of the plots revealed some potential outliers which need to be removed for clarity. 
+
+
+# 3. Clean the plots to remove anomalies using the filter() command.
+
+performance_data <- filter(performance_data , Store <12 & Store >0 & Catalogue <13 & Catalogue >0 & Deal <9 & Deal >0 & Web <13 & Web >0)
+
+
+# 4. Label the plots for clarity. 
+
+WebSpend <- ggplot(performance_data , aes(x = Web , y = TotalSpend))+
+  geom_col()+
+  theme_cowplot()+
+  labs(title = "Purchases via Website",
+       y = "Total Spend Over Last 24 Months",
+       x = "Amount Purchased via Website")
+
+CatalogueSpend <- ggplot(performance_data , aes(x = Catalogue, y = TotalSpend))+
+  geom_col()+
+  theme_cowplot()+
+  labs(title = "Orders Purchased from Catalogue",
+       y = "Total Spend Over Last 24 Months",
+       x = "Amount Purchased via Catalogue Orders")
+
+StoreSpend <- ggplot(performance_data , aes(x = Store, y = TotalSpend))+
+  geom_col()+
+  theme_cowplot()+
+  labs(title = "In Store Purchases",
+       y = "Total Spend Over Last 24 Months",
+       x = "Amount Purchased In Store")
+
+DealSpend <- ggplot(performance_data , aes(x = Deal, y = TotalSpend))+
+  geom_col()+
+  theme_cowplot()+
+  labs(title = "Deals",
+       y = "Total Spend Over Last 24 Months",
+       x = "Amount Purchased Using a Discount")
+
+plot_grid(DealSpend , StoreSpend , CatalogueSpend , WebSpend)
+
+# It was concluded through the analysis that the overall demographic will only purchase 1 product if it is given a discount. Hence, the company should
+#  stay away from this method if looking to sell multiple products quickly.
+
+# An interesting talking point is that if someone goes into the store they will purchase at least two products.
+#  This highlights the spending patterns of the overall data set, showing that all methods of purchase are popular.
+
+# Store promotions should be used to move higher numbers of products over the rest of the methods. Catalogue based promotions yield the largest Total Spend 
+#   for the least amount of products purchased, closely followed by Web based promotions.
+
+#####################################################################
+##    Step 7 - Question 1 - Differences in Campaign Participation
+#####################################################################
+
+###The next step will highlight the difference between consumers that participated in a campaign and those that didn't in relation to overall total spend.
+
+# 1. Organise consumers through total spend.
+
+NoCampWebSpend <- ggplot(part_none , aes(x = Web , y = TotalSpend))+
+  geom_col()+
+  theme_cowplot()+
+  labs(title = "Total Purchases via Website",
+       y = "Total Spend Over Last 24 Months",
+       x = "Amount Purchased via Website")
+
+NoCampCatalogueSpend <- ggplot(part_none , aes(x = Catalogue, y = TotalSpend))+
+  geom_col()+
+  theme_cowplot()+
+  labs(title = "Total Orders Purchased from Catalogue",
+       y = "Total Spend Over Last 24 Months",
+       x = "Amount Purchased via Catalogue Orders")
+
+NoCampStoreSpend <- ggplot(part_none , aes(x = Store, y = TotalSpend))+
+  geom_col()+
+  theme_cowplot()+
+  labs(title = "Total In Store Purchases",
+       y = "Total Spend Over Last 24 Months",
+       x = "Amount Purchased In Store")
+
+NoCampDealSpend <- ggplot(part_none , aes(x = Deal, y = TotalSpend))+
+  geom_col()+
+  theme_cowplot()+
+  labs(title = "Total Purchases via Discounts",
+       y = "Total Spend Over Last 24 Months",
+       x = "Amount Purchased Using a Discount")
+
+plot_grid(NoCampDealSpend , NoCampStoreSpend , NoCampCatalogueSpend , NoCampWebSpend)
+
+
+# 2. Update the part_none filter to remove any further anomalies.
+
+part_none <- filter(part_none , Store <12 & Store >0 & Catalogue <13 & Catalogue >0 & Deal <9 & Deal >0 & Web <13 & Web >0)
+
+
+# 3. Finalise the plots of both participants and non-participants.
+
+plot_grid(DealSpend , StoreSpend , CatalogueSpend , WebSpend)
+
+plot_grid(NoCampDealSpend , NoCampStoreSpend , NoCampCatalogueSpend , NoCampWebSpend)
+
+
+# The plots revealed that Website purchase yielded a large amount of Total Spend. Therefore, the relationship between Web Visits and Web Purchases was examined next.
+
+##################################################################
+##    Step 8 - Relationship between Web Visits and Web Purchases
+##################################################################
+
+# 1. Present the correlation between web visits and web purchases using ggplot().
+
+overallWebVisits <- ggplot(purchase_data , aes(x = WebVisit , y = Web))+
+  geom_col()+
+  theme_cowplot()+
+  labs(title = "Total Web Purchases against Web Visits",
+       x = "Total Web Visits",
+       y = "Purchases on Website")
+
+# 2. Filter the number of website Visits to remove any anomalies. 
+
+filterwebvisits <- filter(purchase_data , WebVisit <11 & WebVisit >0)
+
+ggplot(filterwebvisits , aes(x = WebVisit , y = Web))+
+  geom_col()+
+  theme_cowplot()+
+  labs(title = "Total Web Purchases against Web Visits",
+       x = "Total Web Visits",
+       y = "Purchases on Website")
+
+
+# 3. Organise the correlation between web visits and web purchases for each campaign.
+
+Camp1_Web <- ggplot(part_camp1 , aes(x = WebVisit , y = Web))+
+  geom_col(fill = "Orange")+
+  geom_vline(xintercept = mean(part_camp1$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Campaign 1",
+       x = "Total Web Visits",
+       y = "Purchases on Website")
+
+Camp2_Web <- ggplot(part_camp2 , aes(x = WebVisit , y = Web))+
+  geom_col(fill = "Light Blue")+
+  geom_vline(xintercept = mean(part_camp2$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Campaign 2",
+       x = "Total Web Visits",
+       y = "Purchases on Website")
+
+Camp3_Web <- ggplot(part_camp3 , aes(x = WebVisit , y = Web))+
+  geom_col(fill = "Yellow")+
+  geom_vline(xintercept = mean(part_camp3$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Campaign 3",
+       x = "Total Web Visits",
+       y = "Purchases on Website")
+
+Camp4_Web <- ggplot(part_camp4 , aes(x = WebVisit , y = Web))+
+  geom_col(fill = "Red")+
+  geom_vline(xintercept = mean(part_camp4$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Campaign 4",
+       x = "Total Web Visits",
+       y = "Purchases on Website")
+
+Camp5_Web <- ggplot(part_camp5 , aes(x = WebVisit , y = Web))+
+  geom_col(fill = "Light Pink")+
+  geom_vline(xintercept = mean(part_camp5$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Campaign 5",
+       x = "Total Web Visits",
+       y = "Purchases on Website")
+
+Camp6_Web <- ggplot(part_camp6 , aes(x = WebVisit , y = Web))+
+  geom_col(fill = "Dark Green")+
+  geom_vline(xintercept = mean(part_camp6$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Campaign 6",
+       x = "Total Web Visits",
+       y = "Purchases on Website")
+
+plot_grid(Camp1_Web , Camp2_Web , Camp3_Web , Camp4_Web , Camp5_Web , Camp6_Web)
+
+
+# 4. Present the overall results from the campaigns. 
+
+ggplot(part_any , aes(x = WebVisit , y = Web))+
+  geom_col()+
+  geom_vline(xintercept = mean(part_any$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Particpated in Any Campaign",
+       x = "Total Web Visits",
+       y = "Purchases on Website")
+
+######################################################################
+##    Step 9 - Relationship between Web Visits and Total Purchases
+######################################################################
+
+# This code shows the Relationship between Web Visit and Total Purchase, in relation to the Education Demographic.
+
+# 1. Incorporate Education into the Step 8 plots' code and analyse how it impacts Web Visits and Total Purchase.
+
+plot_1 <- ggplot(part_camp1, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp1$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 1",      
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_2 <- ggplot(part_camp2, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp2$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 2",
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_3 <- ggplot(part_camp3, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp3$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 3",
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_4 <- ggplot(part_camp4, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp4$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 4",
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_5 <- ggplot(part_camp5, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp5$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 5",
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_6 <- ggplot(part_camp6, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp6$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 6",
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_any <- ggplot(part_any, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_any$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Any Campaign" ,
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_grid(plot_1 , plot_2 , plot_3 , plot_4 , plot_5 , plot_6 , plot_any,
+          labels=c("Total Spend of Educated Partcipants based on Each Campaign"))
+
+
+# The "basic" education variable was classed as anomylous within the overall data as it wasn't
+#   consistent within all data sets. The next step will concentrate on filtering it out.
+
+# 2. filter the data sets to remove the "Basic" variable using the filter() command.
+
+filter_camp_3 <-filter(part_camp3 , Education != "Basic")
+filter_camp_6 <-filter(part_camp6 , Education != "Basic")
+filter_camp_any <-filter(part_any , Education != "Basic")
+
+
+# 3. Plot data to present web visits and total spend with education as variables using the same colour, with the removal of "Basic" education. 
+
+plot_1 <- ggplot(part_camp1, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp1$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 1",      
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_2 <- ggplot(part_camp2, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp2$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 2",
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_3 <- ggplot(filter_camp_3, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp3$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 3",
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_4 <- ggplot(part_camp4, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp4$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 4",
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_5 <- ggplot(part_camp5, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp5$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 5",
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_6 <- ggplot(filter_camp_6, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_camp6$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Campaign 6",
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+plot_any <- ggplot(filter_camp_any, aes(x = WebVisit, y = TotalSpend)) +
+  geom_col(aes(fill = Education)) +
+  geom_vline(xintercept = mean(part_any$WebVisit) , size = 1 , colour = "Black" , lty = 6)+
+  theme_classic()+
+  labs(title = "Any Campaign" ,
+       x = "Web Visits ",
+       y = "Total Spend (?)",
+       fill = "Education Level")
+
+
+plot_grid(plot_1 , plot_2 , plot_3 , plot_4 , plot_5 , plot_6 , plot_any)
+
+
+###########################################################
+##    Step 10 - Question 2 : Demographics 
+###########################################################
+
+# The aim of this step is to gain a better understanding of the population from which the data has been obtained from. This will also help 
+# company X to gain a further insight into the performance of each campaign through the manipulation of the campaign related data against the participant related data. 
+
+
+agecamp1 <- ggplot(part_camp1 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_camp1$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 1" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+
+agecamp2 <- ggplot(part_camp2 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(camp_2$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 2" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+
+agecamp3 <- ggplot(part_camp3 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_camp3$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 3" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+
+agecamp4 <- ggplot(part_camp4 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_camp4$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 4" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+
+agecamp5 <- ggplot(part_camp5 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_camp5$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 5" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+
+agecamp6 <- ggplot(part_camp6 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_camp6$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 6" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+plot_grid(agecamp1 , agecamp2 , agecamp3 , agecamp4 , agecamp5 , agecamp6)
+
+
+
+# A. Selecting the demographic data 
+
+# 1. Separate the data into demographics using the select() function. 
+
+part_demographic <- select(part_any , Any,  Age , Marital_Status , Income , Kidhome , Teenhome , TotalSpend ,Education)
+
+nopart_demographic <- select(part_none , Any ,Age , Marital_Status , Income , Kidhome , Teenhome , TotalSpend ,Education)
+
+agecamp1 <- ggplot(part_camp1 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_camp1$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 1" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+agecamp2 <- ggplot(part_camp2 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(camp_2$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 2" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+agecamp3 <- ggplot(part_camp3 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_camp3$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 3" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+agecamp4 <- ggplot(part_camp4 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_camp4$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 4" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+
+agecamp5 <- ggplot(part_camp5 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_camp5$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 5" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+
+agecamp6 <- ggplot(part_camp6 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_camp6$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Camp 6" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months (?)" ,
+       fill = "Marital Status")
+
+plot_grid(agecamp1 , agecamp2 , agecamp3 , agecamp4 , agecamp5 , agecamp6)
+
+
+# 2. Filter the participants into age demographics using the filter() function.
+
+part_below44 <- filter(part_demographic , Age <44)
+
+part_middleaged <- filter(part_demographic , Age >45 & Age <64)
+
+part_over65 <- filter(part_demographic , Age >65)
+
+
+# 3. Filter the non-participants into age demographics using the filter() function.
+
+nopart_below44 <- filter(nopart_demographic , Age <44)
+
+nopart_middleaged <- filter(nopart_demographic , Age >45 & Age <64)
+
+nopart_over65 <- filter(nopart_demographic , Age >65)
+
+
+# B. Age Demographic of Participants.
+
+# 4. Organise into ages and martital status and create plots using ggplot to present the findings.
+
+demographicplot <- ggplot(part_demographic , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(part_demographic$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Participants of Any Campaigns" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Marital Status")
+
+
+below44MSplot <- ggplot(part_below44 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  theme_cowplot()+
+  labs(title = "Participants Under 44 " ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Marital Status")
+
+middleagedMSplot <- ggplot(part_middleaged , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  theme_cowplot()+
+  labs(title = "Middle Aged Pariticpants (45 - 64)" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Marital Status")
+
+over65MSplot <- ggplot(part_over65 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  theme_cowplot()+
+  labs(title = "Partcipants 65+" ,
+       x= "Age" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Marital Status")
+
+plot_grid(below44MSplot , middleagedMSplot , over65MSplot , demographicplot)
+
+
+# C. Non-participant Age and Martial Status Demographic.
+
+# 5. Organise into plots using ggplot to present non-participants.
+
+nopart_demographicplot <- ggplot(nopart_demographic , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  geom_vline(xintercept = mean(nopart_demographic$Age) , size = 1 , colour = "Black" , lty = 6)+
+  theme_cowplot()+
+  labs(title = "Participants of No Campaigns" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Marital Status")
+
+nopart_below44MSplot <- ggplot(nopart_below44 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  theme_cowplot()+
+  labs(title = "None Participants Under 44 " ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Marital Status")
+
+nopart_middleagedMSplot <- ggplot(nopart_middleaged , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  theme_cowplot()+
+  labs(title = " Middle Aged None Particpants (45 - 64)" ,
+       x = "Age" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Marital Status")
+
+nopart_over65MSplot <- ggplot(nopart_over65 , aes(x = Age , y = TotalSpend))+
+  geom_col(aes(fill = Marital_Status))+
+  theme_cowplot()+
+  labs(title = "None Partcipants 65+" ,
+       x= "Age" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Marital Status")
+
+
+# 6. Present all the graphs on the same plot using plot_grid to allow for better comparison between participants and non-participants. 
+
+plot_grid(below44MSplot , middleagedMSplot , over65MSplot , demographicplot)
+
+plot_grid(nopart_below44MSplot , nopart_middleagedMSplot , nopart_over65MSplot , nopart_demographicplot)
+
+plot_grid(demographicplot , nopart_demographicplot)
+
+
+# D. Comparison between Particpants and Non-Participants:
+
+# The main participating consumer are married. Similar trends can be observed in terms of ages and spending, 
+#   typically younger (sub 40) and older (over 70) generations spend less than other ages.Moreover, consumers 
+#     that are single, or together, are more likely to not participate in a campaign.
+
+
+# 7. Present overall Total Spend data in relation to children in the household (kidhome).
+
+childrenplot <- ggplot(part_demographic , aes(x = Kidhome , y = TotalSpend))+
+  geom_col(aes(fill = Education))+  
+  theme_cowplot()+
+  labs(title = "Participants of Any Campaign" ,
+       x= "Children Below 10 in Home" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Education")
+
+teenagerplot <- ggplot(part_demographic , aes(x = Teenhome , y = TotalSpend))+
+  geom_col(aes(fill = Education))+  
+  theme_cowplot()+
+  labs(title = "Participants of Any Campaign" ,
+       x= "Teenagers (11 - 18) in Home" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Education")
+
+
+plot_grid(childrenplot , teenagerplot)
+
+# E. Comparison between consumers that did not take part in a campaign.
+
+# 8. Now present non-participant data in relation to "Education", "Kidhome" and "Total Spend".
+
+nocamp_childrenplot <- ggplot(nopart_demographic , aes(x = Kidhome , y = TotalSpend))+
+  geom_col(aes(fill = Education))+  
+  theme_cowplot()+
+  labs(title = "No Participation in Any Campaign" ,
+       x= "Children Below 10 in Home" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Education")
+
+nocamp_teenagerplot <- ggplot(nopart_demographic , aes(x = Teenhome , y = TotalSpend))+
+  geom_col(aes(fill = Education))+  
+  theme_cowplot()+
+  labs(title = "No Participation in Any Campaign" ,
+       x= "Teenagers (11 - 18) in Home" ,
+       y = "Total Spend in 24 Months" ,
+       fill = "Education")
+
+plot_grid(nocamp_childrenplot , nocamp_teenagerplot)
+
+
+# 9. Present a summary of plots to allow for comparison between those that did, and did not participate, in campaigns.
+
+plot_grid(childrenplot , teenagerplot , nocamp_childrenplot , nocamp_teenagerplot)
+
+
+# The overall demographic has no children living at home. However, the numbers are similar for those that have
+#   one teenager living at home than no teenager at all. This graph also includes the education of Participants 
+#     which College education is the largest education demographic, in all the plots.
+
+# We are now starting to get a solid picture of how the consumers purchase products in response to each campaign.
+#   A similar trend can be observed in the "None Participants overall" with the consumers that did participant in any campaign.
+
+                             
+# Having a look at the demographic in terms of Martial Status of different campaigns.
+                             
+                             # 1. Find out how marital status affected the total spend in all six campaigns. 
+                             
+                             camp1Marital <- ggplot(part_camp1, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = 1)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 1",
+                                    caption = "Created by Group 5",
+                                    x = "Marital Status",
+                                    y = "TotalSpend")
+                             
+                             camp2Marital <- ggplot(part_camp2, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = 1)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 2",
+                                    caption = "Created by Group 5",
+                                    x = "Marital Status",
+                                    y = "TotalSpend")
+                             
+                             camp3Marital <- ggplot(part_camp3, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = 1)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 3",
+                                    caption = "Created by Group 5",
+                                    x = "Marital Status",
+                                    y = "TotalSpend")
+                             
+                             camp4Marital <- ggplot(part_camp4, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = 1)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 4",
+                                    caption = "Created by Group 5",
+                                    x = "Marital Status",
+                                    y = "TotalSpend")
+                             
+                             camp5Marital <- ggplot(part_camp5, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = 1)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 5",
+                                    caption = "Created by Group 5",
+                                    x = "Marital Status",
+                                    y = "TotalSpend")
+                             
+                             camp6Marital <- ggplot(part_camp6, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = 1)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 6",
+                                    caption = "Created by Group 5",
+                                    x = "Marital Status",
+                                    y = "TotalSpend")
+                             
+                             
+                             plot_grid(camp1Marital , camp2Marital , camp3Marital , camp4Marital , camp5Marital , camp6Marital)
+                             
+                             
+                             # Now Adding the mean line of the campaign total spend in relation to consumer Marital Status,
+                             #   This will help identify any Martial Status' within the different campaigns that under performed
+                             #     compared to the rest of the Martial Status'.
+                             
+                             
+                             # 2. Add a mean line of the campaign data in relation to consumer marital status.
+                             
+                             camp1_meanMarital <- ggplot(part_camp1, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = .2)+
+                               geom_boxplot(data = part_camp1[part_camp1$Marital_Status == "Married",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_boxplot(data = part_camp1[part_camp1$Marital_Status == "Divorced",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_hline(yintercept = mean(part_camp1$TotalSpend) , size = 1 , colour = "Black" , lty = 6)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 1",
+                                    x = "Marital Status",
+                                    y = "Total Spend (?)")
+                             
+                             camp2_meanMarital <- ggplot(part_camp2, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = .2)+
+                               geom_boxplot(data = part_camp2[part_camp2$Marital_Status == "Single",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_boxplot(data = part_camp2[part_camp2$Marital_Status == "Married",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_hline(yintercept = mean(part_camp2$TotalSpend) , size = 1 , colour = "Black" , lty = 6)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 2",
+                                    x = "Marital Status",
+                                    y = "Total Spend (?)")
+                             
+                             camp3_meanMarital <- ggplot(part_camp3, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = .2)+
+                               geom_boxplot(data = part_camp3[part_camp3$Marital_Status == "Widow",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_boxplot(data = part_camp3[part_camp3$Marital_Status == "Single",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_boxplot(data = part_camp3[part_camp3$Marital_Status == "Married",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_boxplot(data = part_camp3[part_camp3$Marital_Status == "Divorced",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_hline(yintercept = mean(part_camp3$TotalSpend) , size = 1 , colour = "Black" , lty = 6)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 3",
+                                    x = "Marital Status",
+                                    y = "Total Spend")
+                             
+                             camp4_meanMarital <- ggplot(part_camp4, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = .2)+
+                               geom_boxplot(data = part_camp4[part_camp4$Marital_Status == "Widow",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_boxplot(data = part_camp4[part_camp4$Marital_Status == "Divorced",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_hline(yintercept = mean(part_camp4$TotalSpend) , size = 1 , colour = "Black" , lty = 6)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 4",
+                                    x = "Marital Status",
+                                    y = "Total Spend (?)")
+                             
+                             camp5_meanMarital <- ggplot(part_camp5, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = .2)+
+                               geom_boxplot(data = part_camp5[part_camp5$Marital_Status == "Widow",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_boxplot(data = part_camp5[part_camp5$Marital_Status == "Divorced",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_boxplot(data = part_camp5[part_camp5$Marital_Status == "Married",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_hline(yintercept = mean(part_camp5$TotalSpend) , size = 1 , colour = "Black" , lty = 6)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 5",
+                                    x = "Marital Status",
+                                    y = "Total Spend (?)")
+                             
+                             camp6_meanMarital <- ggplot(part_camp6, aes(x = Marital_Status, y = TotalSpend , fill = Marital_Status)) +
+                               geom_boxplot(alpha = .2)+
+                               geom_boxplot(data = part_camp6[part_camp6$Marital_Status == "Married",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_boxplot(data = part_camp6[part_camp6$Marital_Status == "Together",],
+                                            aes(x = Marital_Status, y = TotalSpend))+
+                               geom_hline(yintercept = mean(part_camp6$TotalSpend) , size = 1 , colour = "Black" , lty = 6)+
+                               theme_cowplot()+
+                               theme(legend.position = "none")+
+                               labs(title = "Camp 6",
+                                    x = "Marital Status",
+                                    y = "Total Spend (?)")
+                             
+                             plot_grid(camp1_meanMarital , camp2_meanMarital , camp3_meanMarital , camp4_meanMarital , camp5_meanMarital , camp6_meanMarital)
+                             
+                             ############################################################################
+                             # Reference List 
+                             ############################################################################
+                             
+                             # Ioncica, M., Petrescu, E. C., Ioncica, D. and Constantinescu, M. (2012) The role of education on consumer behavior on the insurance market.
+                             # Procedia-Social and Behavioral Sciences, 46, pp.4154-4158.
+'/kaggle/working'
+── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.1.0     ✔ readr     2.1.4
+✔ forcats   1.0.0     ✔ stringr   1.5.0
+✔ ggplot2   3.4.1     ✔ tibble    3.1.8
+✔ lubridate 1.9.2     ✔ tidyr     1.3.0
+✔ purrr     1.0.1     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+
+Attaching package: ‘cowplot’
+
+
+The following object is masked from ‘package:lubridate’:
+
+    stamp
+
+
+Rows: 2216 Columns: 8
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+dbl (8): ID, Camp_1, Camp_2, Camp_3, Camp_4, Camp_5, Camp_6, Any
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 2216 Columns: 10
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr (3): Education, Marital_Status, Dt_Customer
+dbl (7): ID, Year_Birth, Income, Kidhome, Teenhome, Recency, Complain
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 2216 Columns: 12
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+dbl (12): ID, Product_1, Product_2, Product_3, Product_4, Product_5, Product...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+'ID''Camp_1''Camp_2''Camp_3''Camp_4''Camp_5''Camp_6''Any'
+'ID''Year_Birth''Education''Marital_Status''Income''Kidhome''Teenhome''Dt_Customer''Recency''Complain'
+'ID''Product_1''Product_2''Product_3''Product_4''Product_5''Product_6''Deal''Web''Catalogue''Store''WebVisit'
+Rows: 2,216
+Columns: 8
+$ ID     <dbl> 5524, 2174, 4141, 6182, 5324, 7446, 965, 6177, 4855, 5899, 387,…
+$ Camp_1 <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, …
+$ Camp_2 <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
+$ Camp_3 <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
+$ Camp_4 <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
+$ Camp_5 <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, …
+$ Camp_6 <dbl> 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, …
+$ Any    <dbl> 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, …
+Rows: 2,216
+Columns: 10
+$ ID             <dbl> 5524, 2174, 4141, 6182, 5324, 7446, 965, 6177, 4855, 58…
+$ Year_Birth     <dbl> 1957, 1954, 1965, 1984, 1981, 1967, 1971, 1985, 1974, 1…
+$ Education      <chr> "College", "College", "College", "College", "PhD", "Mas…
+$ Marital_Status <chr> "Single", "Single", "Together", "Together", "Married", …
+$ Income         <dbl> 58138, 46344, 71613, 26646, 58293, 62513, 55635, 33454,…
+$ Kidhome        <dbl> 0, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1…
+$ Teenhome       <dbl> 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0…
+$ Dt_Customer    <chr> "04/09/2012", "08/03/2014", "21/08/2013", "10/02/2014",…
+$ Recency        <dbl> 58, 38, 26, 26, 94, 16, 34, 32, 19, 68, 59, 82, 53, 38,…
+$ Complain       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+Rows: 2,216
+Columns: 12
+$ ID        <dbl> 5524, 2174, 4141, 6182, 5324, 7446, 965, 6177, 4855, 5899, 3…
+$ Product_1 <dbl> 546, 6, 127, 20, 118, 98, 164, 56, 24, 6, 11, 480, 53, 17, 1…
+$ Product_2 <dbl> 635, 11, 426, 11, 173, 520, 235, 76, 14, 28, 6, 194, 233, 3,…
+$ Product_3 <dbl> 88, 1, 49, 4, 43, 42, 65, 10, 0, 0, 16, 61, 2, 14, 22, 5, 5,…
+$ Product_4 <dbl> 172, 2, 111, 10, 46, 0, 50, 3, 3, 1, 11, 225, 3, 6, 59, 2, 1…
+$ Product_5 <dbl> 88, 1, 21, 3, 27, 42, 49, 1, 3, 1, 1, 112, 5, 1, 68, 13, 12,…
+$ Product_6 <dbl> 88, 6, 42, 5, 15, 14, 27, 23, 2, 13, 16, 30, 14, 5, 45, 4, 2…
+$ Deal      <dbl> 3, 2, 1, 2, 5, 2, 4, 2, 1, 1, 1, 1, 3, 1, 1, 3, 2, 2, 2, 1, …
+$ Web       <dbl> 8, 1, 8, 2, 5, 6, 7, 4, 3, 1, 2, 3, 6, 1, 7, 3, 4, 11, 2, 4,…
+$ Catalogue <dbl> 10, 1, 2, 0, 3, 4, 3, 0, 0, 0, 0, 4, 1, 0, 6, 0, 1, 4, 1, 2,…
+$ Store     <dbl> 4, 2, 10, 4, 6, 10, 7, 4, 2, 0, 3, 8, 5, 3, 12, 3, 6, 9, 3, …
+$ WebVisit  <dbl> 7, 5, 4, 6, 5, 6, 6, 8, 9, 20, 8, 2, 6, 8, 3, 8, 7, 5, 6, 8,…
+       ID            Camp_1            Camp_2            Camp_3       
+ Min.   :    0   Min.   :0.00000   Min.   :0.00000   Min.   :0.00000  
+ 1st Qu.: 2815   1st Qu.:0.00000   1st Qu.:0.00000   1st Qu.:0.00000  
+ Median : 5458   Median :0.00000   Median :0.00000   Median :0.00000  
+ Mean   : 5588   Mean   :0.06408   Mean   :0.01354   Mean   :0.07356  
+ 3rd Qu.: 8422   3rd Qu.:0.00000   3rd Qu.:0.00000   3rd Qu.:0.00000  
+ Max.   :11191   Max.   :1.00000   Max.   :1.00000   Max.   :1.00000  
+     Camp_4            Camp_5           Camp_6            Any       
+ Min.   :0.00000   Min.   :0.0000   Min.   :0.0000   Min.   :0.000  
+ 1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:0.000  
+ Median :0.00000   Median :0.0000   Median :0.0000   Median :0.000  
+ Mean   :0.07401   Mean   :0.0731   Mean   :0.1503   Mean   :0.273  
+ 3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:0.0000   3rd Qu.:1.000  
+ Max.   :1.00000   Max.   :1.0000   Max.   :1.0000   Max.   :1.000  
+       ID          Year_Birth    Education         Marital_Status    
+ Min.   :    0   Min.   :1893   Length:2216        Length:2216       
+ 1st Qu.: 2815   1st Qu.:1959   Class :character   Class :character  
+ Median : 5458   Median :1970   Mode  :character   Mode  :character  
+ Mean   : 5588   Mean   :1969                                        
+ 3rd Qu.: 8422   3rd Qu.:1977                                        
+ Max.   :11191   Max.   :1996                                        
+     Income          Kidhome          Teenhome      Dt_Customer       
+ Min.   :  1730   Min.   :0.0000   Min.   :0.0000   Length:2216       
+ 1st Qu.: 35303   1st Qu.:0.0000   1st Qu.:0.0000   Class :character  
+ Median : 51382   Median :0.0000   Median :0.0000   Mode  :character  
+ Mean   : 52247   Mean   :0.4418   Mean   :0.5054                     
+ 3rd Qu.: 68522   3rd Qu.:1.0000   3rd Qu.:1.0000                     
+ Max.   :666666   Max.   :2.0000   Max.   :2.0000                     
+    Recency         Complain       
+ Min.   : 0.00   Min.   :0.000000  
+ 1st Qu.:24.00   1st Qu.:0.000000  
+ Median :49.00   Median :0.000000  
+ Mean   :49.01   Mean   :0.009477  
+ 3rd Qu.:74.00   3rd Qu.:0.000000  
+ Max.   :99.00   Max.   :1.000000  
+       ID          Product_1        Product_2        Product_3     
+ Min.   :    0   Min.   :   0.0   Min.   :   0.0   Min.   :  0.00  
+ 1st Qu.: 2815   1st Qu.:  16.0   1st Qu.:  24.0   1st Qu.:  2.00  
+ Median : 5458   Median :  68.0   Median : 174.5   Median :  8.00  
+ Mean   : 5588   Mean   : 167.0   Mean   : 305.1   Mean   : 26.36  
+ 3rd Qu.: 8422   3rd Qu.: 232.2   3rd Qu.: 505.0   3rd Qu.: 33.00  
+ Max.   :11191   Max.   :1725.0   Max.   :1493.0   Max.   :199.00  
+   Product_4        Product_5        Product_6           Deal       
+ Min.   :  0.00   Min.   :  0.00   Min.   :  0.00   Min.   : 0.000  
+ 1st Qu.:  3.00   1st Qu.:  1.00   1st Qu.:  9.00   1st Qu.: 1.000  
+ Median : 12.00   Median :  8.00   Median : 24.50   Median : 2.000  
+ Mean   : 37.64   Mean   : 27.03   Mean   : 43.97   Mean   : 2.324  
+ 3rd Qu.: 50.00   3rd Qu.: 33.00   3rd Qu.: 56.00   3rd Qu.: 3.000  
+ Max.   :259.00   Max.   :262.00   Max.   :321.00   Max.   :15.000  
+      Web           Catalogue          Store           WebVisit     
+ Min.   : 0.000   Min.   : 0.000   Min.   : 0.000   Min.   : 0.000  
+ 1st Qu.: 2.000   1st Qu.: 0.000   1st Qu.: 3.000   1st Qu.: 3.000  
+ Median : 4.000   Median : 2.000   Median : 5.000   Median : 6.000  
+ Mean   : 4.085   Mean   : 2.671   Mean   : 5.801   Mean   : 5.319  
+ 3rd Qu.: 6.000   3rd Qu.: 4.000   3rd Qu.: 8.000   3rd Qu.: 7.000  
+ Max.   :27.000   Max.   :28.000   Max.   :13.000   Max.   :20.000  
+Joining with `by = join_by(ID)`
+Joining with `by = join_by(ID)`
+       ID            Camp_1           Camp_2            Camp_3       
+ Min.   :    0   Min.   :0.0000   Min.   :0.00000   Min.   :0.00000  
+ 1st Qu.: 2827   1st Qu.:0.0000   1st Qu.:0.00000   1st Qu.:0.00000  
+ Median : 5468   Median :0.0000   Median :0.00000   Median :0.00000  
+ Mean   : 5589   Mean   :0.0657   Mean   :0.01398   Mean   :0.07223  
+ 3rd Qu.: 8425   3rd Qu.:0.0000   3rd Qu.:0.00000   3rd Qu.:0.00000  
+ Max.   :11191   Max.   :1.0000   Max.   :1.00000   Max.   :1.00000  
+                                                                     
+     Camp_4            Camp_5            Camp_6            Any        
+ Min.   :0.00000   Min.   :0.00000   Min.   :0.0000   Min.   :0.0000  
+ 1st Qu.:0.00000   1st Qu.:0.00000   1st Qu.:0.0000   1st Qu.:0.0000  
+ Median :0.00000   Median :0.00000   Median :0.0000   Median :0.0000  
+ Mean   :0.07642   Mean   :0.07502   Mean   :0.1528   Mean   :0.2768  
+ 3rd Qu.:0.00000   3rd Qu.:0.00000   3rd Qu.:0.0000   3rd Qu.:1.0000  
+ Max.   :1.00000   Max.   :1.00000   Max.   :1.0000   Max.   :1.0000  
+                                                                      
+   Year_Birth     Education     Marital_Status     Income      
+ Min.   :1893   Basic  :   0   Married :835    Min.   :  2447  
+ 1st Qu.:1959   College:1109   Together:557    1st Qu.: 36636  
+ Median :1970   Master : 562   Single  :450    Median : 52583  
+ Mean   :1969   PhD    : 475   Divorced:229    Mean   : 53245  
+ 3rd Qu.:1977                  Widow   : 75    3rd Qu.: 69106  
+ Max.   :1996                  Absurd  :  0    Max.   :666666  
+                               (Other) :  0                    
+    Kidhome          Teenhome      Dt_Customer           Recency     
+ Min.   :0.0000   Min.   :0.0000   Length:2146        Min.   : 0.00  
+ 1st Qu.:0.0000   1st Qu.:0.0000   Class :character   1st Qu.:24.00  
+ Median :0.0000   Median :0.0000   Mode  :character   Median :49.00  
+ Mean   :0.4376   Mean   :0.5158                      Mean   :49.12  
+ 3rd Qu.:1.0000   3rd Qu.:1.0000                      3rd Qu.:74.00  
+ Max.   :2.0000   Max.   :2.0000                      Max.   :99.00  
+                                                                     
+    Complain          Product_1        Product_2        Product_3     
+ Min.   :0.000000   Min.   :   0.0   Min.   :   0.0   Min.   :  0.00  
+ 1st Qu.:0.000000   1st Qu.:  17.0   1st Qu.:  27.0   1st Qu.:  1.00  
+ Median :0.000000   Median :  71.0   Median : 186.5   Median :  8.00  
+ Mean   :0.009786   Mean   : 171.7   Mean   : 313.8   Mean   : 26.83  
+ 3rd Qu.:0.000000   3rd Qu.: 240.8   3rd Qu.: 515.0   3rd Qu.: 34.00  
+ Max.   :1.000000   Max.   :1725.0   Max.   :1493.0   Max.   :199.00  
+                                                                      
+   Product_4        Product_5        Product_6           Deal       
+ Min.   :  0.00   Min.   :  0.00   Min.   :  0.00   Min.   : 0.000  
+ 1st Qu.:  3.00   1st Qu.:  1.00   1st Qu.:  9.00   1st Qu.: 1.000  
+ Median : 12.00   Median :  8.00   Median : 25.00   Median : 2.000  
+ Mean   : 38.22   Mean   : 27.55   Mean   : 44.42   Mean   : 2.321  
+ 3rd Qu.: 51.00   3rd Qu.: 35.00   3rd Qu.: 57.00   3rd Qu.: 3.000  
+ Max.   :259.00   Max.   :262.00   Max.   :321.00   Max.   :15.000  
+                                                                    
+      Web           Catalogue          Store         WebVisit     
+ Min.   : 0.000   Min.   : 0.000   Min.   : 0.0   Min.   : 0.000  
+ 1st Qu.: 2.000   1st Qu.: 1.000   1st Qu.: 3.0   1st Qu.: 3.000  
+ Median : 4.000   Median : 2.000   Median : 5.0   Median : 6.000  
+ Mean   : 4.153   Mean   : 2.737   Mean   : 5.9   Mean   : 5.229  
+ 3rd Qu.: 6.000   3rd Qu.: 4.000   3rd Qu.: 8.0   3rd Qu.: 7.000  
+ Max.   :27.000   Max.   :28.000   Max.   :13.0   Max.   :10.000  
+                                                                  
+   TotalSpend          Age         AmountPurchased
+ Min.   :   6.0   Min.   : 25.00   Min.   : 0.00  
+ 1st Qu.:  72.0   1st Qu.: 44.00   1st Qu.: 8.00  
+ Median : 414.0   Median : 51.00   Median :16.00  
+ Mean   : 622.6   Mean   : 52.42   Mean   :15.11  
+ 3rd Qu.:1066.8   3rd Qu.: 62.00   3rd Qu.:21.00  
+ Max.   :2525.0   Max.   :128.00   Max.   :44.00  
+                                                  
+      Any           Year_Birth        Age          Education   AmountPurchased
+ Min.   :0.0000   Min.   :1940   Min.   :25.00   Basic  :  0   Min.   : 5.0   
+ 1st Qu.:0.0000   1st Qu.:1958   1st Qu.:45.00   College:700   1st Qu.:12.0   
+ Median :0.0000   Median :1969   Median :52.00   Master :351   Median :17.0   
+ Mean   :0.3424   Mean   :1968   Mean   :53.39   PhD    :310   Mean   :16.8   
+ 3rd Qu.:1.0000   3rd Qu.:1976   3rd Qu.:63.00                 3rd Qu.:21.0   
+ Max.   :1.0000   Max.   :1996   Max.   :81.00                 Max.   :34.0   
+                                                                              
+  Marital_Status     Income          Kidhome          Teenhome     
+ Married :519    Min.   :  7500   Min.   :0.0000   Min.   :0.0000  
+ Together:358    1st Qu.: 44124   1st Qu.:0.0000   1st Qu.:0.0000  
+ Single  :287    Median : 57954   Median :0.0000   Median :1.0000  
+ Divorced:144    Mean   : 57561   Mean   :0.3196   Mean   :0.5467  
+ Widow   : 53    3rd Qu.: 71434   3rd Qu.:1.0000   3rd Qu.:1.0000  
+ Absurd  :  0    Max.   :666666   Max.   :2.0000   Max.   :2.0000  
+ (Other) :  0                                                      
+   TotalSpend          Deal            Web           Catalogue     
+ Min.   :  22.0   Min.   :1.000   Min.   : 1.000   Min.   : 1.000  
+ 1st Qu.: 241.0   1st Qu.:1.000   1st Qu.: 3.000   1st Qu.: 1.000  
+ Median : 595.0   Median :2.000   Median : 4.000   Median : 2.000  
+ Mean   : 743.6   Mean   :2.488   Mean   : 4.829   Mean   : 3.357  
+ 3rd Qu.:1158.0   3rd Qu.:3.000   3rd Qu.: 6.000   3rd Qu.: 5.000  
+ Max.   :2525.0   Max.   :8.000   Max.   :11.000   Max.   :11.000  
+                                                                   
+     Store           WebVisit         Complain       
+ Min.   : 2.000   Min.   : 1.000   Min.   :0.000000  
+ 1st Qu.: 4.000   1st Qu.: 3.000   1st Qu.:0.000000  
+ Median : 6.000   Median : 5.000   Median :0.000000  
+ Mean   : 6.123   Mean   : 4.952   Mean   :0.005878  
+ 3rd Qu.: 8.000   3rd Qu.: 7.000   3rd Qu.:0.000000  
+ Max.   :11.000   Max.   :10.000   Max.   :1.000000  
+                                                     
+
+
+
+
+
+
+
+
+
+
+
+
+Warning message:
+“Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+ℹ Please use `linewidth` instead.”
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
